@@ -1,6 +1,3 @@
-use spl_token::instruction::transfer_checked;
-use solana_program::program::invoke_signed;
-use spl_associated_token_account::get_associated_token_address;
 use solana_program::program_pack::Pack;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -56,7 +53,7 @@ fn process_instruction(
         );
 
     }
-    
+
     else if instruction_data[0] == 6 {
         return place_option(
             program_id,
@@ -83,8 +80,8 @@ entrypoint!(process_instruction);
 struct LotteryDetails {
     pub admin: Pubkey,
     pub name: String,
-    pub is_initialized: u64,
-    pub is_ended: u64,
+    pub description: String,
+    pub image_link: String,
     pub lottery_start: String,
     pub lottery_end: String,
     pub ticket_price: u64,
@@ -92,6 +89,7 @@ struct LotteryDetails {
     pub total_entries: u64,
     pub token_mint: Pubkey,
 }
+
 
 fn create_lottery(
     program_id: &Pubkey,
@@ -112,7 +110,7 @@ fn create_lottery(
     }
 
     let mut input_data = LotteryDetails::try_from_slice(&instruction_data)
-        .expect("Instruction data not serialized properly");
+        .expect("Instruction data serialization didn't worked");
 
     if input_data.admin != *creator_account.key {
         msg!("Invaild instruction data");
@@ -125,8 +123,6 @@ fn create_lottery(
     }
     input_data.amount_in_pot = 0;
     input_data.total_entries = 0;
-    input_data.is_initialized = 1;
-    input_data.is_ended = 0;
 
     input_data.serialize(&mut &mut writing_account.try_borrow_mut_data()?[..])?;
     Ok(())
@@ -145,17 +141,12 @@ fn withdraw(
     let accounts_iter = &mut accounts.iter();
     let writing_account = next_account_info(accounts_iter)?;
     let admin_account = next_account_info(accounts_iter)?;
-    let token_mint = next_account_info(accounts_iter)?;
-    let token_program = next_account_info(accounts_iter)?;
-    let lotto_ata = next_account_info(accounts_iter)?;
-    let admin_ata = next_account_info(accounts_iter)?;
-
 
     if writing_account.owner != program_id {
         msg!("writing_account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
     }
-    if !admin_account.is_signer {   
+    if !admin_account.is_signer {
         msg!("admin should be signer");
         return Err(ProgramError::IncorrectProgramId);
     }
@@ -169,38 +160,14 @@ fn withdraw(
     let input_data = WithdrawRequest::try_from_slice(&instruction_data)
         .expect("Instruction data serialization didn't worked");
 
-    // let rent_exemption = Rent::get()?.minimum_balance(writing_account.data_len());
-    // if **writing_account.lamports.borrow() - rent_exemption < input_data.amount {
-    //     msg!("Insufficent balance");
-    //     return Err(ProgramError::InsufficientFunds);
-    // }
-    
-    let winner_token_account_address = get_associated_token_address(writing_account.key, token_mint.key);
-    
-    let admin_account_address = get_associated_token_address(admin_account.key, token_mint.key);
-    
-    msg!("lotto ATA: {:?}", winner_token_account_address);
-    msg!("Admin ATA: {:?}", &admin_account_address);
+    let rent_exemption = Rent::get()?.minimum_balance(writing_account.data_len());
+    if **writing_account.lamports.borrow() - rent_exemption < input_data.amount {
+        msg!("Insufficent balance");
+        return Err(ProgramError::InsufficientFunds);
+    }
 
-    let transfer_to_winning_player_account = transfer_checked(
-        token_program.key,
-        &lotto_ata.key,
-        token_mint.key,
-        &winner_token_account_address,
-        admin_account.key,
-        &[],
-        input_data.amount,
-        9
-    )?;
-
-    invoke_signed(
-        &transfer_to_winning_player_account,
-        &[token_program.clone(), admin_ata.clone(), lotto_ata.clone(), admin_account.clone()],
-        &[]
-    )?;
-    // **writing_account.try_borrow_mut_lamports()? -= input_data.amount;
-
-    // **admin_account.try_borrow_mut_lamports()? += input_data.amount;
+    **writing_account.try_borrow_mut_lamports()? -= input_data.amount;
+    **admin_account.try_borrow_mut_lamports()? += input_data.amount;
 
     Ok(())
 }
@@ -208,9 +175,9 @@ fn withdraw(
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 struct TicketDetails {
-    pub player: String,
-    pub ticket_count: u64,
-    pub ticket_number_arr: [u8; 128]
+    pub player: Pubkey,
+    pub referral_wallet: Pubkey,
+    pub ticket_number_arr: [u8; 6]
 }
 
 fn play(
@@ -226,6 +193,7 @@ fn play(
     let token_program = &accounts[5];
     let lottery_pool_token_account = &accounts[4];
 
+
     if writing_account.owner != program_id {
         msg!("writing_account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
@@ -238,17 +206,17 @@ fn play(
         msg!("player should be signer");
         return Err(ProgramError::IncorrectProgramId);
     }
-    
-        let mut fanilotto_data = LotteryDetails::try_from_slice(*writing_account.data.borrow())
+
+       let mut fanilotto_data = LotteryDetails::try_from_slice(*writing_account.data.borrow())
         .expect("Error deserialaizing data");
 
         let mut ticket_data = TicketDetails::try_from_slice(&instruction_data)
         .expect("Error deserialaizing data");
 
-         let total_amount = fanilotto_data.ticket_price;
+         let  total_amount: u64 = 10;
             msg!("Ticket Purchase");
 
-            let transfer_to_lottery_pool = transfer(    
+            let transfer_to_lottery_pool = transfer(
                 token_program.key,
                 player_token_account.key,
                 lottery_pool_token_account.key,
@@ -256,24 +224,26 @@ fn play(
                 &[],
                 total_amount
             )?;
-            
+
             invoke(
                 &transfer_to_lottery_pool,
                 &[player_token_account.clone(), lottery_pool_token_account.clone(),  token_program.clone(), player.clone()],
             )?;
 
             ticket_data.ticket_number_arr = ticket_data.ticket_number_arr;
-            ticket_data.ticket_count = ticket_data.ticket_count;
             fanilotto_data.amount_in_pot += total_amount;
             fanilotto_data.total_entries += 1;
-            
+
             // **writing_account.try_borrow_mut_lamports()? += **player_program_account.lamports.borrow();
             // **player_program_account.try_borrow_mut_lamports()? = 0;
                 
             fanilotto_data.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
-            // ticket_data.serialize(&mut &mut player_program_account.data.borrow_mut()[..])?;
+            ticket_data.serialize(&mut &mut player_program_account.data.borrow_mut()[..])?;
 
     // let signers = &[&accounts[..]];
+    
+
+
 
     Ok(())
 }
