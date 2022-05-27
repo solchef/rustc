@@ -1,7 +1,6 @@
 use spl_token::instruction::transfer_checked;
 use solana_program::program::invoke_signed;
 use spl_associated_token_account::get_associated_token_address;
-use solana_program::program_pack::Pack;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -15,8 +14,7 @@ use solana_program::{
     program::{invoke},
 };
 
-use spl_token::{instruction::transfer, state::Account};
-
+use spl_token::{instruction::transfer};
 
 fn process_instruction(
     program_id: &Pubkey,
@@ -65,7 +63,6 @@ fn process_instruction(
         );
 
     }
-
     else if instruction_data[0] == 7 {
         return settle_option(
             program_id,
@@ -110,7 +107,7 @@ fn create_lottery(
         msg!("writing_account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
     }
-
+    
     let mut input_data = LotteryDetails::try_from_slice(&instruction_data)
         .expect("Instruction data not serialized properly");
 
@@ -256,7 +253,7 @@ fn play(
                 &[],
                 total_amount
             )?;
-            
+
             invoke(
                 &transfer_to_lottery_pool,
                 &[player_token_account.clone(), lottery_pool_token_account.clone(),  token_program.clone(), player.clone()],
