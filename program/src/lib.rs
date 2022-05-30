@@ -235,12 +235,12 @@ fn play(
         msg!("player should be signer");
         return Err(ProgramError::IncorrectProgramId);
     }
-    
+
         let mut fanilotto_data = LotteryDetails::try_from_slice(*writing_account.data.borrow())
-        .expect("Error deserialaizing data");
+        .expect("Error deserialaizing lotto data");
 
         let mut ticket_data = TicketDetails::try_from_slice(&instruction_data)
-        .expect("Error deserialaizing data");
+        .expect("Error deserialaizing ticket data");
 
          let total_amount = fanilotto_data.ticket_price;
             msg!("Ticket Purchase");
