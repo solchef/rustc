@@ -1,19 +1,20 @@
 [package]
-name = "fanitrade-utils"
-version = "0.1.0"
 authors = ["James <james@fanitrade.com>"]
 edition = "2021"
+name = "fanitrade-utils"
+version = "0.1.0"
 
 [dependencies]
-solana-program = "1.7.14"
+arrayref = "0.3.6"
 borsh = "0.9.1"
 borsh-derive = "0.9.1"
-arrayref = "0.3.6"
 num-derive = "0.3"
 num-traits = "0.2"
+solana-program = "1.7.14"
+spl-associated-token-account = {version = "1.0.2", features = ["no-entrypoint"]}
+spl-token = {version = "3.0.1", features = ["no-entrypoint"]}
 thiserror = "1.0.30"
-spl-token = { version = "3.0.1", features = ["no-entrypoint"] }
-spl-associated-token-account = { version = "1.0.2", features = ["no-entrypoint"] }
+
 [features]
 no-entrypoint = []
 
