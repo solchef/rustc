@@ -277,7 +277,7 @@ fn play(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 struct TraxDetails {
     pub admin: Pubkey,
-    pub is_initialized: bool,
+    pub is_initialized: u64,
     pub trax_pool_amount: u64,
     pub total_entries: u64,
     pub total_markets: u64,
@@ -297,6 +297,8 @@ fn initialize_trax(
         return Err(ProgramError::IncorrectProgramId);
     }
 
+    // let (escrow_pubkey, bump_seed) = Pubkey::find_program_address(&[&["fanitraxacc"]], program_id);
+
     if writing_account.owner != program_id {
         msg!("writing_account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
@@ -314,7 +316,7 @@ fn initialize_trax(
         return Err(ProgramError::InsufficientFunds);
     }
 
-    input_data.is_initialized = true;
+    input_data.is_initialized = 1;
     input_data.trax_pool_amount = 0;
     input_data.total_markets = 0;
     input_data.active_markets = 0;
@@ -326,6 +328,7 @@ fn initialize_trax(
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 struct MarketDetails {
     pub admin: Pubkey,
+    pub trax_pub: String,
     pub market_pair: String,
     pub last_price: u64,
     pub upper_floor_limit: u64,
@@ -394,19 +397,19 @@ fn place_option(
 ) -> ProgramResult {
     let accounts_iter = &mut accounts.iter();
     let writing_account = next_account_info(accounts_iter)?;
-    let player_program_account = next_account_info(accounts_iter)?;
-    let player = next_account_info(accounts_iter)?;
+    let trader_program_account = next_account_info(accounts_iter)?;
+    let trader = next_account_info(accounts_iter)?;
 
     if writing_account.owner != program_id {
         msg!("writing_account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
     }
-    if player_program_account.owner != program_id {
-        msg!("player_program_account isn't owned by program");
+    if trader_program_account.owner != program_id {
+        msg!("trader_program_account isn't owned by program");
         return Err(ProgramError::IncorrectProgramId);
     }
-    if !player.is_signer {
-        msg!("player should be signer");
+    if !trader.is_signer {
+        msg!("trader should be signer");
         return Err(ProgramError::IncorrectProgramId);
     }
 
@@ -416,14 +419,14 @@ fn place_option(
     let options_bet_data =
         OptionsBetDetails::try_from_slice(&instruction_data).expect("Error deserialaizing data");
 
-    options_market_data.amount_in_pool += **player_program_account.lamports.borrow();
+    options_market_data.amount_in_pool += **trader_program_account.lamports.borrow();
     options_market_data.options_count += 1;
 
-    // **writing_account.try_borrow_mut_lamports()? += **player_program_account.lamports.borrow();
-    // **player_program_account.try_borrow_mut_lamports()? = 0;
+    // **writing_account.try_borrow_mut_lamports()? += **trader_program_account.lamports.borrow();
+    // **trader_program_account.try_borrow_mut_lamports()? = 0;
 
     options_market_data.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
-    options_bet_data.serialize(&mut &mut player_program_account.data.borrow_mut()[..])?;
+    options_bet_data.serialize(&mut &mut trader_program_account.data.borrow_mut()[..])?;
 
     Ok(())
 }
