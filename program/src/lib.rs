@@ -73,19 +73,19 @@ fn process_instruction(
 }
 entrypoint!(process_instruction);
 
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
-struct LotteryDetails {
-    pub admin: Pubkey,
-    pub name: String,
-    pub is_initialized: u64,
-    pub is_ended: u64,
-    pub lottery_start: String,
-    pub lottery_end: String,
-    pub ticket_price: u64,
-    pub amount_in_pot: u64,
-    pub total_entries: u64,
-    pub token_mint: Pubkey,
-}
+// #[derive(BorshSerialize, BorshDeserialize, Debug)]
+// struct LotteryDetails {
+//     pub admin: Pubkey,
+//     pub name: String,
+//     pub is_initialized: u64,
+//     pub is_ended: u64,
+//     pub lottery_start: String,
+//     pub lottery_end: String,
+//     pub ticket_price: u64,
+//     pub amount_in_pot: u64,
+//     pub total_entries: u64,
+//     pub token_mint: Pubkey,
+// }
 
 fn create_lottery(
     program_id: &Pubkey,
@@ -387,7 +387,7 @@ struct OptionsBetDetails {
     pub options_bet_end: u64,
     pub options_duration: u64,
     pub options_bet_amount: u64,
-    pub options_bet_result: String, //undecided Won Lost
+    pub options_bet_result: String, //undecided won lost
 }
 
 fn place_option(

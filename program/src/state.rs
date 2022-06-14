@@ -1,7 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-struct LotteryDetails {
+pub struct LotteryDetails {
     pub admin: Pubkey,
     pub name: String,
     pub is_initialized: u64,
@@ -18,7 +18,7 @@ struct LotteryDetails {
 struct TicketDetails {
     pub player: String,
     pub ticket_count: u64,
-    pub ticket_number_arr: [u8; 128]
+    pub ticket_number_arr: [u8; 128],
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
