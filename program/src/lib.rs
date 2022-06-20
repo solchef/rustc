@@ -73,19 +73,19 @@ fn process_instruction(
 }
 entrypoint!(process_instruction);
 
-// #[derive(BorshSerialize, BorshDeserialize, Debug)]
-// struct LotteryDetails {
-//     pub admin: Pubkey,
-//     pub name: String,
-//     pub is_initialized: u64,
-//     pub is_ended: u64,
-//     pub lottery_start: String,
-//     pub lottery_end: String,
-//     pub ticket_price: u64,
-//     pub amount_in_pot: u64,
-//     pub total_entries: u64,
-//     pub token_mint: Pubkey,
-// }
+#[derive(BorshSerialize, BorshDeserialize, Debug)]
+struct LotteryDetails {
+    pub admin: Pubkey,
+    pub name: String,
+    pub is_initialized: u64,
+    pub is_ended: u64,
+    pub lottery_start: String,
+    pub lottery_end: String,
+    pub ticket_price: u64,
+    pub amount_in_pot: u64,
+    pub total_entries: u64,
+    pub token_mint: Pubkey,
+}
 
 fn create_lottery(
     program_id: &Pubkey,
@@ -259,6 +259,7 @@ fn play(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) 
     )?;
 
     msg!("{:?}", ticket_data);
+
     ticket_data.ticket_number_arr = ticket_data.ticket_number_arr;
     ticket_data.ticket_number_arr = ticket_data.ticket_number_arr;
     ticket_data.ticket_count = ticket_data.ticket_count;
@@ -266,10 +267,10 @@ fn play(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) 
     fanilotto_data.total_entries += 1;
 
     **writing_account.try_borrow_mut_lamports()? += **player_program_account.lamports.borrow();
-    // **player_program_account.try_borrow_mut_lamports()? = 0;
+    **player_program_account.try_borrow_mut_lamports()? = 0;
 
-    fanilotto_data.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
-    ticket_data.serialize(&mut &mut player_program_account.try_borrow_mut_data()?[..])?;
+    // fanilotto_data.serialize(&mut &mut writing_account.data.borrow_mut()[..])?;
+    // ticket_data.serialize(&mut &mut player_program_account.try_borrow_mut_data()?[..])?;
     Ok(())
 }
 
